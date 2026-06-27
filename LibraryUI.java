@@ -90,8 +90,7 @@ public class LibraryUI extends JFrame {
     private DefaultTableModel topBooksModel;
     private DefaultTableModel topAuthorsModel;
 
-    // Console Area
-    private JTextArea consoleArea;
+
 
     // Internal class representation for Book representation in ComboBoxes
     private static class BookItem {
@@ -156,8 +155,7 @@ public class LibraryUI extends JFrame {
         setupLeftSidebar();
         setupMainContentArea();
 
-        // Redirect System.out to GUI Console
-        redirectSystemOut();
+
 
         // Refresh Data on Startup
         refreshAllData();
@@ -188,8 +186,7 @@ public class LibraryUI extends JFrame {
         sidebar.add(createSidebarButton("Borrowers Management", "BORROWERS"));
         sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
         sidebar.add(createSidebarButton("Borrow & Return Desk", "BORROW"));
-        sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
-        sidebar.add(createSidebarButton("System Terminal Logs", "CONSOLE"));
+
 
         sidebar.add(Box.createVerticalGlue());
 
@@ -240,7 +237,7 @@ public class LibraryUI extends JFrame {
         contentPanel.add(createBooksPanel(), "BOOKS");
         contentPanel.add(createBorrowersPanel(), "BORROWERS");
         contentPanel.add(createBorrowPanel(), "BORROW");
-        contentPanel.add(createConsolePanel(), "CONSOLE");
+
 
         add(contentPanel, BorderLayout.CENTER);
     }
@@ -1076,49 +1073,7 @@ public class LibraryUI extends JFrame {
         return panel;
     }
 
-    // ==========================================
-    // 5. Console Logs / Debug Panel
-    // ==========================================
-    private JPanel createConsolePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG_DARK);
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel title = new JLabel("System Terminal Outputs");
-        title.setFont(FONT_TITLE);
-        title.setForeground(TEXT_LIGHT);
-        title.setBorder(new EmptyBorder(0, 0, 10, 0));
-        panel.add(title, BorderLayout.NORTH);
-
-        consoleArea = new JTextArea();
-        consoleArea.setBackground(new Color(15, 15, 18));
-        consoleArea.setForeground(new Color(80, 250, 120)); // Matrix Green
-        consoleArea.setFont(FONT_CONSOLE);
-        consoleArea.setEditable(false);
-        consoleArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        JScrollPane scroll = new JScrollPane(consoleArea);
-        scroll.setBorder(new LineBorder(BORDER_COLOR, 1));
-        panel.add(scroll, BorderLayout.CENTER);
-
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        controls.setBackground(BG_DARK);
-
-        JButton btnRunReport = createStyledButton("Print Console Analytics Report", ACCENT_PRIMARY);
-        JButton btnPrintRecords = createStyledButton("Print System Borrow Records", ACCENT_SECONDARY);
-        JButton btnClear = createStyledButton("Clear Terminal logs", new Color(120, 120, 130));
-
-        controls.add(btnRunReport);
-        controls.add(btnPrintRecords);
-        controls.add(btnClear);
-        panel.add(controls, BorderLayout.SOUTH);
-
-        btnRunReport.addActionListener(e -> librarySystem.generateReports(bookTree));
-        btnPrintRecords.addActionListener(e -> librarySystem.printAllRecords());
-        btnClear.addActionListener(e -> consoleArea.setText(""));
-
-        return panel;
-    }
 
     // ==========================================
     // Core Swing Custom GUI Styling Helpers
@@ -1313,58 +1268,20 @@ public class LibraryUI extends JFrame {
     }
 
     private void refreshDashboardStats() {
-        List<Book> books = new ArrayList<>();
-        collectBooks(bookTree.getRoot(), books);
-        List<BorrowRecord> records = getBorrowRecordsList();
-
-        int totalBooks = books.size();
-        int totalCopies = 0;
-        int totalAvailable = 0;
-        for (Book b : books) {
-            totalCopies += b.getTotalCopies();
-            totalAvailable += b.getAvailableCopies();
-        }
-
-        int activeBorrows = 0;
-        for (BorrowRecord r : records) {
-            if (!r.isReturned()) {
-                activeBorrows++;
-            }
-        }
-
-        int waitingRequestsCount = 0;
-        for (Book b : books) {
-            waitingRequestsCount += b.getWaitingList().size();
-        }
-
-        lblTotalBooksVal.setText(String.valueOf(totalBooks));
-        lblTotalCopiesVal.setText(String.valueOf(totalCopies));
-        lblTotalAvailableVal.setText(String.valueOf(totalAvailable));
-        lblActiveBorrowsVal.setText(String.valueOf(activeBorrows));
-        lblWaitingRequestsVal.setText(String.valueOf(waitingRequestsCount));
+        lblTotalBooksVal.setText(String.valueOf(bookTree.getTotalBookTitles()));
+        lblTotalCopiesVal.setText(String.valueOf(bookTree.getTotalBookCopies()));
+        lblTotalAvailableVal.setText(String.valueOf(bookTree.getTotalAvailableCopies()));
+        lblActiveBorrowsVal.setText(String.valueOf(librarySystem.getActiveBorrowsCount()));
+        lblWaitingRequestsVal.setText(String.valueOf(librarySystem.getTotalWaitingRequestsCount(bookTree)));
 
         topBooksModel.setRowCount(0);
-        List<Book> sortedBooks = new ArrayList<>(books);
-        sortedBooks.sort((b1, b2) -> Integer.compare(b2.getBorrowCount(), b1.getBorrowCount()));
-        for (int i = 0; i < Math.min(5, sortedBooks.size()); i++) {
-            Book b = sortedBooks.get(i);
-            if (b.getBorrowCount() > 0) {
-                topBooksModel.addRow(new Object[]{b.getTitle(), b.getIsbn(), b.getBorrowCount()});
-            }
+        for (Book b : bookTree.getTopBorrowedBooks(5)) {
+            topBooksModel.addRow(new Object[]{b.getTitle(), b.getIsbn(), b.getBorrowCount()});
         }
 
         topAuthorsModel.setRowCount(0);
-        java.util.Map<String, Integer> authorStats = new java.util.HashMap<>();
-        for (Book b : books) {
-            authorStats.put(b.getAuthor(), authorStats.getOrDefault(b.getAuthor(), 0) + b.getBorrowCount());
-        }
-        List<java.util.Map.Entry<String, Integer>> sortedAuthors = new ArrayList<>(authorStats.entrySet());
-        sortedAuthors.sort((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue()));
-        for (int i = 0; i < Math.min(5, sortedAuthors.size()); i++) {
-            java.util.Map.Entry<String, Integer> e = sortedAuthors.get(i);
-            if (e.getValue() > 0) {
-                topAuthorsModel.addRow(new Object[]{e.getKey(), e.getValue()});
-            }
+        for (java.util.Map.Entry<String, Integer> entry : librarySystem.getTopAuthors(bookTree, 5)) {
+            topAuthorsModel.addRow(new Object[]{entry.getKey(), entry.getValue()});
         }
     }
 
@@ -1397,27 +1314,7 @@ public class LibraryUI extends JFrame {
         }
     }
 
-    private void redirectSystemOut() {
-        OutputStream out = new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                if (consoleArea != null) {
-                    consoleArea.append(String.valueOf((char) b));
-                    consoleArea.setCaretPosition(consoleArea.getDocument().getLength());
-                }
-            }
 
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                if (consoleArea != null) {
-                    consoleArea.append(new String(b, off, len));
-                    consoleArea.setCaretPosition(consoleArea.getDocument().getLength());
-                }
-            }
-        };
-        System.setOut(new PrintStream(out, true));
-        System.setErr(new PrintStream(out, true));
-    }
 
     public static void main(String[] args) {
         try {

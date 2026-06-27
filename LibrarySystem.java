@@ -204,5 +204,48 @@ public class LibrarySystem {
             this.borrowBook(next.getStudentName(), next.isGraduating(), book, LocalDate.now(), LocalDate.now().plusDays(14));
         }
     }
+
+    // ==========================================
+    // For Cards
+    // ==========================================
+
+    public int getActiveBorrowsCount() {
+        int active = 0;
+        for (List<BorrowRecord> list : borrowRecords.values()) {
+            for (BorrowRecord r : list) {
+                if (!r.isReturned()) {
+                    active++;
+                }
+            }
+        }
+        return active;
+    }
+
+    public int getTotalWaitingRequestsCount(BookAVLTree bookTree) {
+        if (bookTree == null) return 0;
+        int count = 0;
+        for (Book b : bookTree.getAllBooks()) {
+            count += b.getWaitingList().size();
+        }
+        return count;
+    }
+
+    public List<Map.Entry<String, Integer>> getTopAuthors(BookAVLTree bookTree, int limit) {
+        if (bookTree == null) return new ArrayList<>();
+        Map<String, Integer> authorStats = new HashMap<>();
+        for (Book b : bookTree.getAllBooks()) {
+            authorStats.put(b.getAuthor(), authorStats.getOrDefault(b.getAuthor(), 0) + b.getBorrowCount());
+        }
+        List<Map.Entry<String, Integer>> sortedAuthors = new ArrayList<>(authorStats.entrySet());
+        sortedAuthors.sort((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue()));
+        List<Map.Entry<String, Integer>> topAuthors = new ArrayList<>();
+        for (int i = 0; i < Math.min(limit, sortedAuthors.size()); i++) {
+            Map.Entry<String, Integer> e = sortedAuthors.get(i);
+            if (e.getValue() > 0) {
+                topAuthors.add(e);
+            }
+        }
+        return topAuthors;
+    }
 }
 

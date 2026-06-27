@@ -216,4 +216,54 @@ public class BookAVLTree {
 
         return current;
     }
+
+    // ==========================================
+    // For Cards
+    // ==========================================
+
+    private void collectBooks(AVLNode node, java.util.List<Book> list) {
+        if (node == null) return;
+        collectBooks(node.left, list);
+        list.add(node.book);
+        collectBooks(node.right, list);
+    }
+
+    public java.util.List<Book> getAllBooks() {
+        java.util.List<Book> list = new java.util.ArrayList<>();
+        collectBooks(root, list);
+        return list;
+    }
+
+    public int getTotalBookTitles() {
+        return getAllBooks().size();
+    }
+
+    public int getTotalBookCopies() {
+        int sum = 0;
+        for (Book b : getAllBooks()) {
+            sum += b.getTotalCopies();
+        }
+        return sum;
+    }
+
+    public int getTotalAvailableCopies() {
+        int sum = 0;
+        for (Book b : getAllBooks()) {
+            sum += b.getAvailableCopies();
+        }
+        return sum;
+    }
+
+    public java.util.List<Book> getTopBorrowedBooks(int limit) {
+        java.util.List<Book> list = getAllBooks();
+        list.sort((b1, b2) -> Integer.compare(b2.getBorrowCount(), b1.getBorrowCount()));
+        java.util.List<Book> topList = new java.util.ArrayList<>();
+        for (int i = 0; i < Math.min(limit, list.size()); i++) {
+            Book b = list.get(i);
+            if (b.getBorrowCount() > 0) {
+                topList.add(b);
+            }
+        }
+        return topList;
+    }
 }
