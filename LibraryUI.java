@@ -190,13 +190,7 @@ public class LibraryUI extends JFrame {
 
         sidebar.add(Box.createVerticalGlue());
 
-        // Signature
-        JLabel lblCredits = new JLabel("Algorithm 2 Assignment");
-        lblCredits.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        lblCredits.setForeground(new Color(120, 120, 130));
-        lblCredits.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lblCredits.setBorder(new EmptyBorder(0, 0, 15, 0));
-        sidebar.add(lblCredits);
+
 
         add(sidebar, BorderLayout.WEST);
     }
@@ -833,7 +827,7 @@ public class LibraryUI extends JFrame {
         // Buttons
         JPanel actionPanel = new JPanel(new GridLayout(2, 2, 8, 10));
         actionPanel.setBackground(CARD_DARK);
-        JButton btnBorrow = createStyledButton("Lend / Borrow", ACCENT_PRIMARY);
+        JButton btnBorrow = createStyledButton("Borrow", ACCENT_PRIMARY);
         JButton btnUpdate = createStyledButton("Update Record", new Color(130, 90, 240));
         JButton btnReturn = createStyledButton("Return Book", ACCENT_SECONDARY);
         JButton btnDelete = createStyledButton("Delete Record", new Color(220, 80, 80));
@@ -1242,14 +1236,20 @@ public class LibraryUI extends JFrame {
 
     @SuppressWarnings("unchecked")
     private List<BorrowRecord> getBorrowRecordsList() {
+        List<BorrowRecord> allRecords = new ArrayList<>();
         try {
             Field field = LibrarySystem.class.getDeclaredField("borrowRecords");
             field.setAccessible(true);
-            return (List<BorrowRecord>) field.get(librarySystem);
+            java.util.Map<String, List<BorrowRecord>> map = (java.util.Map<String, List<BorrowRecord>>) field.get(librarySystem);
+            if (map != null) {
+                for (List<BorrowRecord> list : map.values()) {
+                    allRecords.addAll(list);
+                }
+            }
         } catch (Exception ex) {
             System.err.println("Reflection Error fetching records: " + ex.getMessage());
-            return new ArrayList<>();
         }
+        return allRecords;
     }
 
     private void refreshBorrowTable() {

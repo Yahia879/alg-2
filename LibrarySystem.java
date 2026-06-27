@@ -16,11 +16,11 @@ import java.util.Map;
  */
 
 public class LibrarySystem {
-    private List<BorrowRecord> borrowRecords;
+    private Map<String, List<BorrowRecord>> borrowRecords;
     private static final int MAX_BORROW_LIMIT = 3;
 
     public LibrarySystem() {
-        this.borrowRecords = new ArrayList<>();
+        this.borrowRecords = new HashMap<>();
     }
 
     public void borrowBook(String borrowerName, boolean isGraduating, Book book, LocalDate borrowDate, LocalDate expectedReturnDate) {
@@ -42,7 +42,7 @@ public class LibrarySystem {
 
         if (book.borrowBook()) {
             BorrowRecord record = new BorrowRecord(borrowerName, isGraduating, book.getIsbn(), borrowDate, expectedReturnDate);
-            borrowRecords.add(record);
+            borrowRecords.computeIfAbsent(borrowerName.toLowerCase(), k -> new ArrayList<>()).add(record);
             System.out.println("Borrowing successfully done");
         } else {
             book.addToWaitingList(borrowerName, isGraduating);
@@ -53,7 +53,7 @@ public class LibrarySystem {
     private void processBorrowing(String borrowerName, boolean isGraduating, Book book, LocalDate borrowDate, LocalDate expectedReturnDate) {
         if (book.borrowBook()) {
             BorrowRecord record = new BorrowRecord(borrowerName, isGraduating, book.getIsbn(), borrowDate, expectedReturnDate);
-            borrowRecords.add(record);
+            borrowRecords.computeIfAbsent(borrowerName.toLowerCase(), k -> new ArrayList<>()).add(record);
             System.out.println("Borrowing successfully done");
         }
     }
@@ -89,17 +89,23 @@ public class LibrarySystem {
         if (borrowRecords.isEmpty()) {
             System.out.println("No borrow records exist currently");
         } else {
-            for (BorrowRecord r : borrowRecords) {
-                System.out.println(r);
+            for (List<BorrowRecord> list : borrowRecords.values()) {
+                for (BorrowRecord r : list) {
+                    System.out.println(r);
+                }
             }
         }
         System.out.println("----------------------------------------");
     }
 
     private int countActiveBorrows(String borrowerName) {
+        List<BorrowRecord> list = borrowRecords.get(borrowerName.toLowerCase());
+        if (list == null) {
+            return 0;
+        }
         int count = 0;
-        for (BorrowRecord r : borrowRecords) {
-            if (r.getBorrowerName().equalsIgnoreCase(borrowerName) && !r.isReturned()) {
+        for (BorrowRecord r : list) {
+            if (!r.isReturned()) {
                 count++;
             }
         }
@@ -107,8 +113,12 @@ public class LibrarySystem {
     }
 
     private boolean hasActiveBorrowForBook(String borrowerName, String isbn) {
-        for (BorrowRecord r : borrowRecords) {
-            if (r.getBorrowerName().equalsIgnoreCase(borrowerName) && r.getBookIsbn().equals(isbn) && !r.isReturned()) {
+        List<BorrowRecord> list = borrowRecords.get(borrowerName.toLowerCase());
+        if (list == null) {
+            return false;
+        }
+        for (BorrowRecord r : list) {
+            if (r.getBookIsbn().equals(isbn) && !r.isReturned()) {
                 return true;
             }
         }
@@ -116,8 +126,12 @@ public class LibrarySystem {
     }
 
     private BorrowRecord findActiveRecord(String borrowerName, String isbn) {
-        for (BorrowRecord r : borrowRecords) {
-            if (r.getBorrowerName().equalsIgnoreCase(borrowerName) && r.getBookIsbn().equals(isbn) && !r.isReturned()) {
+        List<BorrowRecord> list = borrowRecords.get(borrowerName.toLowerCase());
+        if (list == null) {
+            return null;
+        }
+        for (BorrowRecord r : list) {
+            if (r.getBookIsbn().equals(isbn) && !r.isReturned()) {
                 return r;
             }
         }
