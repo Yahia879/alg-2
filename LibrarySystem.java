@@ -247,5 +247,27 @@ public class LibrarySystem {
         }
         return topAuthors;
     }
+
+    public List<BorrowRecord> searchRecords(String query) {
+        List<BorrowRecord> results = new ArrayList<>();
+        if (query == null || query.trim().isEmpty()) {
+            for (List<BorrowRecord> list : borrowRecords.values()) {
+                results.addAll(list);
+            }
+            return results;
+        }
+        
+        String q = query.toLowerCase().trim();
+        for (List<BorrowRecord> list : borrowRecords.values()) {
+            for (BorrowRecord r : list) {
+                if (r.getBorrowerName().toLowerCase().contains(q) || 
+                    r.getBookIsbn().contains(q) || 
+                    String.valueOf(r.getRecordId()).contains(q)) {
+                    results.add(r);
+                }
+            }
+        }
+        return results;
+    }
 }
 

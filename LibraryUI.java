@@ -80,6 +80,7 @@ public class LibraryUI extends JFrame {
     // Dropdown selectors for Borrow & Return form
     private JComboBox<Borrower> cmbBorrower;
     private JComboBox<BookItem> cmbBook;
+    private JTextField txtSearchRecords;
 
     // Dashboard Info Labels
     private JLabel lblTotalBooksVal;
@@ -624,17 +625,7 @@ public class LibraryUI extends JFrame {
         title.setForeground(TEXT_LIGHT);
         topRow.add(title, BorderLayout.WEST);
 
-        // Instant Live Search Bar
-        JPanel searchBar = new JPanel(new BorderLayout(5, 0));
-        searchBar.setBackground(BG_DARK);
-        JLabel lblSearch = new JLabel("Search Borrowers: ");
-        lblSearch.setFont(FONT_BODY);
-        lblSearch.setForeground(TEXT_LIGHT);
-        JTextField txtSearch = createStyledTextField();
-        txtSearch.setPreferredSize(new Dimension(200, 30));
-        searchBar.add(lblSearch, BorderLayout.WEST);
-        searchBar.add(txtSearch, BorderLayout.CENTER);
-        topRow.add(searchBar, BorderLayout.EAST);
+
 
         panel.add(topRow, BorderLayout.NORTH);
 
@@ -762,18 +753,7 @@ public class LibraryUI extends JFrame {
             }
         });
 
-        // Filtering
-        txtSearch.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                String text = txtSearch.getText();
-                if (text.trim().length() == 0) {
-                    borrowersSorter.setRowFilter(null);
-                } else {
-                    borrowersSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
-                }
-            }
-        });
+
 
         return panel;
     }
@@ -869,6 +849,19 @@ public class LibraryUI extends JFrame {
         tableContainer.setBackground(CARD_DARK);
         tableContainer.setBorder(createTitledBorder("Active Borrowing Logs & Queue Status"));
 
+        // Top row for table: Search bar
+        JPanel topSearchPanel = new JPanel(new BorderLayout(8, 0));
+        topSearchPanel.setBackground(CARD_DARK);
+        topSearchPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        JLabel lblSearchRecords = new JLabel("Search Records: ");
+        lblSearchRecords.setFont(FONT_HEADER);
+        lblSearchRecords.setForeground(TEXT_LIGHT);
+        txtSearchRecords = createStyledTextField();
+        txtSearchRecords.setPreferredSize(new Dimension(220, 30));
+        topSearchPanel.add(lblSearchRecords, BorderLayout.WEST);
+        topSearchPanel.add(txtSearchRecords, BorderLayout.CENTER);
+        tableContainer.add(topSearchPanel, BorderLayout.NORTH);
+
         borrowTableModel = new DefaultTableModel(new String[]{
                 "ID", "Borrower", "Grad?", "Book ISBN", "Lend Date", "Due Date", "Returned?"
         }, 0);
@@ -878,6 +871,14 @@ public class LibraryUI extends JFrame {
         borrowTable.setRowSorter(borrowSorter);
 
         tableContainer.add(new JScrollPane(borrowTable), BorderLayout.CENTER);
+
+        // Search key listener
+        txtSearchRecords.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                refreshBorrowTable();
+            }
+        });
 
         gbc.gridx = 0;
         gbc.weightx = 0.3;
@@ -1265,7 +1266,13 @@ public class LibraryUI extends JFrame {
 
     private void refreshBorrowTable() {
         borrowTableModel.setRowCount(0);
-        List<BorrowRecord> records = getBorrowRecordsList();
+        String query = txtSearchRecords != null ? txtSearchRecords.getText().trim() : "";
+        List<BorrowRecord> records;
+        if (query.isEmpty()) {
+            records = getBorrowRecordsList();
+        } else {
+            records = librarySystem.searchRecords(query);
+        }
         for (BorrowRecord r : records) {
             borrowTableModel.addRow(new Object[]{
                     r.getRecordId(),
