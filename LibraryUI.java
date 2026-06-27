@@ -86,6 +86,7 @@ public class LibraryUI extends JFrame {
     private JLabel lblTotalCopiesVal;
     private JLabel lblActiveBorrowsVal;
     private JLabel lblWaitingRequestsVal;
+    private JLabel lblTotalAvailableVal;
     private DefaultTableModel topBooksModel;
     private DefaultTableModel topAuthorsModel;
 
@@ -259,17 +260,19 @@ public class LibraryUI extends JFrame {
         panel.add(title, BorderLayout.NORTH);
 
         // Core Counters Cards (Grid Layout)
-        JPanel countersGrid = new JPanel(new GridLayout(1, 4, 15, 0));
+        JPanel countersGrid = new JPanel(new GridLayout(1, 5, 12, 0));
         countersGrid.setBackground(BG_DARK);
         countersGrid.setBorder(new EmptyBorder(20, 0, 20, 0));
 
         lblTotalBooksVal = new JLabel("0");
         lblTotalCopiesVal = new JLabel("0");
+        lblTotalAvailableVal = new JLabel("0");
         lblActiveBorrowsVal = new JLabel("0");
         lblWaitingRequestsVal = new JLabel("0");
 
         countersGrid.add(createCounterCard("Total Book Titles", lblTotalBooksVal, ACCENT_PRIMARY));
         countersGrid.add(createCounterCard("Total Book Copies", lblTotalCopiesVal, ACCENT_SECONDARY));
+        countersGrid.add(createCounterCard("Available Copies", lblTotalAvailableVal, new Color(46, 204, 113)));
         countersGrid.add(createCounterCard("Active Borrows", lblActiveBorrowsVal, new Color(255, 110, 110)));
         countersGrid.add(createCounterCard("Waiting Requests", lblWaitingRequestsVal, new Color(255, 193, 7)));
 
@@ -1316,8 +1319,10 @@ public class LibraryUI extends JFrame {
 
         int totalBooks = books.size();
         int totalCopies = 0;
+        int totalAvailable = 0;
         for (Book b : books) {
             totalCopies += b.getTotalCopies();
+            totalAvailable += b.getAvailableCopies();
         }
 
         int activeBorrows = 0;
@@ -1334,6 +1339,7 @@ public class LibraryUI extends JFrame {
 
         lblTotalBooksVal.setText(String.valueOf(totalBooks));
         lblTotalCopiesVal.setText(String.valueOf(totalCopies));
+        lblTotalAvailableVal.setText(String.valueOf(totalAvailable));
         lblActiveBorrowsVal.setText(String.valueOf(activeBorrows));
         lblWaitingRequestsVal.setText(String.valueOf(waitingRequestsCount));
 
