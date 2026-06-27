@@ -449,15 +449,27 @@ public class LibraryUI extends JFrame {
 
         panel.add(mainContent, BorderLayout.CENTER);
 
-        // Live filtering listener
+        // AVL Search integration for the search box
         txtSearch.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                String text = txtSearch.getText();
-                if (text.trim().length() == 0) {
-                    booksSorter.setRowFilter(null);
+                String text = txtSearch.getText().trim();
+                if (text.isEmpty()) {
+                    // Restore all books
+                    refreshBooksTable();
                 } else {
-                    booksSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                    // Search using the AVL Tree search method (O(log N) complexity)
+                    Book foundBook = bookTree.search(text);
+                    booksTableModel.setRowCount(0);
+                    if (foundBook != null) {
+                        booksTableModel.addRow(new Object[]{
+                                foundBook.getIsbn(),
+                                foundBook.getTitle(),
+                                foundBook.getAuthor(),
+                                foundBook.getAvailableCopies() + " / " + foundBook.getTotalCopies(),
+                                foundBook.getBorrowCount()
+                        });
+                    }
                 }
             }
         });
