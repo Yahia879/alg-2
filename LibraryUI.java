@@ -432,7 +432,7 @@ public class LibraryUI extends JFrame {
         JPanel waitingListContainer = new JPanel(new BorderLayout());
         waitingListContainer.setBackground(CARD_DARK);
         waitingListContainer.setBorder(createTitledBorder("Selected Book Waiting List (Priority Queue)"));
-        waitingListTableModel = new DefaultTableModel(new String[]{"Student Name", "Is Graduating?", "Priority Weight"}, 0);
+        waitingListTableModel = new DefaultTableModel(new String[]{"Queue Position", "Student Name", "Is Graduating?"}, 0);
         waitingListTable = createStyledTable(waitingListTableModel);
         waitingListContainer.add(new JScrollPane(waitingListTable), BorderLayout.CENTER);
         rightPanel.add(waitingListContainer);
@@ -829,16 +829,14 @@ public class LibraryUI extends JFrame {
         formPanel.add(Box.createRigidArea(new Dimension(0, 25)));
 
         // Buttons
-        JPanel actionPanel = new JPanel(new GridLayout(2, 2, 8, 10));
+        JPanel actionPanel = new JPanel(new GridLayout(3, 1, 0, 10));
         actionPanel.setBackground(CARD_DARK);
         JButton btnBorrow = createStyledButton("Borrow", ACCENT_PRIMARY);
         JButton btnUpdate = createStyledButton("Update Record", new Color(130, 90, 240));
         JButton btnReturn = createStyledButton("Return Book", ACCENT_SECONDARY);
-        JButton btnDelete = createStyledButton("Delete Record", new Color(220, 80, 80));
         actionPanel.add(btnBorrow);
         actionPanel.add(btnUpdate);
         actionPanel.add(btnReturn);
-        actionPanel.add(btnDelete);
         formPanel.add(actionPanel);
 
         formPanel.add(Box.createVerticalGlue());
@@ -886,6 +884,40 @@ public class LibraryUI extends JFrame {
 
             try {
                 LocalDate dueDate = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                
+                // Intercept warning/status constraints to display visual Alerts/Dialogs
+                int activeBorrows = 0;
+                for (BorrowRecord r : getBorrowRecordsList()) {
+                    if (r.getBorrowerName().equalsIgnoreCase(selectedBorrower.getName()) && !r.isReturned()) {
+                        activeBorrows++;
+                    }
+                }
+
+                if (activeBorrows >= 3) {
+                    JOptionPane.showMessageDialog(this, "You have hit your limit of borrowing books! The limit is 3 books.", "Borrowing Limit Exceeded", JOptionPane.WARNING_MESSAGE);
+                } else {
+                    boolean alreadyBorrowed = false;
+                    for (BorrowRecord r : getBorrowRecordsList()) {
+                        if (r.getBorrowerName().equalsIgnoreCase(selectedBorrower.getName()) && 
+                            r.getBookIsbn().equals(selectedBookItem.getBook().getIsbn()) && 
+                            !r.isReturned()) {
+                            alreadyBorrowed = true;
+                            break;
+                        }
+                    }
+
+                    if (alreadyBorrowed) {
+                        JOptionPane.showMessageDialog(this, "You have already borrowed this book!", "Duplicate Borrow Check", JOptionPane.WARNING_MESSAGE);
+                    } else {
+                        // Check availability
+                        if (selectedBookItem.getBook().getAvailableCopies() <= 0) {
+                            JOptionPane.showMessageDialog(this, "Book is not available at this time. You are being added to the waiting list.", "Added to Waiting List", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Borrowing completed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
+                }
+
                 librarySystem.borrowBook(
                         selectedBorrower.getName(),
                         selectedBorrower.isGraduating(),
@@ -965,27 +997,19 @@ public class LibraryUI extends JFrame {
                 return;
             }
 
+            // Intercept return status to display visual success Alert/Dialog
+            boolean hasWaiting = !book.getWaitingList().isEmpty();
+            if (hasWaiting) {
+                JOptionPane.showMessageDialog(this, "Book returned successfully! It has been automatically issued to the next student in the waiting list.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Book returned successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+
             librarySystem.returnBook(borrowerName, book);
             refreshAllData();
         });
 
-        btnDelete.addActionListener(e -> {
-            int selectedRow = borrowTable.getSelectedRow();
-            if (selectedRow < 0) {
-                JOptionPane.showMessageDialog(this, "Select a borrow record from the table to delete.", "Selection Required", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            int modelRow = borrowTable.convertRowIndexToModel(selectedRow);
-            int recordId = (int) borrowTableModel.getValueAt(modelRow, 0);
 
-            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this borrow record (ID: " + recordId + ")?", "Confirm Deletion", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                List<BorrowRecord> records = getBorrowRecordsList();
-                records.removeIf(r -> r.getRecordId() == recordId);
-                JOptionPane.showMessageDialog(this, "Borrow record deleted from the system.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                refreshAllData();
-            }
-        });
 
         // Sync table click to fields
         borrowTable.getSelectionModel().addListSelectionListener(e -> {
@@ -1338,13 +1362,14 @@ public class LibraryUI extends JFrame {
                     heapField.setAccessible(true);
                     WaitingRequest[] heap = (WaitingRequest[]) heapField.get(pq);
 
+                    int position = 1;
                     for (int i = 0; i < pq.size(); i++) {
                         WaitingRequest req = heap[i];
                         if (req != null) {
                             waitingListTableModel.addRow(new Object[]{
+                                    position++,
                                     req.getStudentName(),
-                                    req.isGraduating() ? "Yes (High Priority)" : "No",
-                                    req.isGraduating() ? "1 (High)" : "2 (Normal)"
+                                    req.isGraduating() ? "Yes (High Priority)" : "No"
                             });
                         }
                     }
