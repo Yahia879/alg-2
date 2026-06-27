@@ -139,7 +139,9 @@ public class LibraryUI extends JFrame {
         this.bookTree = new BookAVLTree();
         this.librarySystem = new LibrarySystem();
 
-        // Seed Sample Data is removed - starts empty as requested
+        // Load persisted books and borrowers from file using IO helper class
+        IO.loadBooks(bookTree);
+        registeredBorrowers.addAll(IO.loadBorrowers());
 
         // Configure Frame Properties
         setTitle("Digital Library Management System");
@@ -701,6 +703,7 @@ public class LibraryUI extends JFrame {
             }
 
             registeredBorrowers.add(new Borrower(name, isGrad));
+            IO.saveBorrowers(registeredBorrowers); // Persist borrowers
             JOptionPane.showMessageDialog(this, "Borrower registered successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             txtName.setText("");
             chkGrad.setSelected(false);
@@ -720,6 +723,7 @@ public class LibraryUI extends JFrame {
             int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to remove '" + name + "'?", "Confirm Removal", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 registeredBorrowers.removeIf(b -> b.getName().equalsIgnoreCase(name));
+                IO.saveBorrowers(registeredBorrowers); // Persist borrowers
                 JOptionPane.showMessageDialog(this, "Borrower removed from the system.", "Success", JOptionPane.INFORMATION_MESSAGE);
                 refreshAllData();
             }
@@ -1200,6 +1204,8 @@ public class LibraryUI extends JFrame {
                     b.getBorrowCount()
             });
         }
+        // Save books to persistent file
+        IO.saveBooks(books);
     }
 
     private void collectBooks(AVLNode node, List<Book> books) {
