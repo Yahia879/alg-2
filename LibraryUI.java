@@ -538,8 +538,19 @@ public class LibraryUI extends JFrame {
                 if (existing != null) {
                     existing.setTitle(titleStr);
                     existing.setAuthor(author);
-                    existing.updateCopies(copies);
-                    JOptionPane.showMessageDialog(this, "Book updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    int oldTotal = existing.getTotalCopies();
+                    int diff = copies - oldTotal;
+                    
+                    if (diff > 0) {
+                        // Use librarySystem to safely add copies and serve the waiting queue
+                        librarySystem.addNewCopies(bookTree, isbn, diff);
+                        JOptionPane.showMessageDialog(this, "Book updated successfully! Any students in the waiting list have been served.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        existing.updateCopies(copies);
+                        JOptionPane.showMessageDialog(this, "Book updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                    
                     refreshAllData();
                     clearForm(txtIsbn, txtTitle, txtAuthor, txtCopies);
                 } else {
